@@ -1,0 +1,117 @@
+<resources>
+    <string name="app_name">FTMS Treadmill</string>
+
+    <!-- Notification -->
+    <string name="notification_channel_name">Treadmill connection</string>
+    <string name="notification_channel_description">Shown while the app is connected to a treadmill</string>
+    <string name="notification_speed">Running at %1$s km/h</string>
+    <string name="action_stop">Stop belt</string>
+    <string name="action_disconnect">Disconnect</string>
+
+    <!-- Connection states -->
+    <string name="state_idle">Not connected</string>
+    <string name="state_connecting">Connecting…</string>
+    <string name="state_connecting_attempt">Connecting (attempt %1$d)…</string>
+    <string name="state_initializing">Setting up treadmill…</string>
+    <string name="state_connected">Connected</string>
+    <string name="state_connected_no_control">Connected (monitor only)</string>
+    <string name="state_reconnecting">Reconnecting…</string>
+    <string name="state_reconnecting_in">Reconnecting in %1$d s (attempt %2$d)</string>
+    <string name="state_bluetooth_off">Bluetooth is off</string>
+    <string name="state_failed">Connection failed: %1$s</string>
+    <string name="unknown_device">Unknown treadmill</string>
+
+    <!-- Connection actions -->
+    <string name="connect">Connect</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="choose_device">Choose treadmill</string>
+    <string name="retry">Retry</string>
+    <string name="cancel">Cancel</string>
+    <string name="turn_on_bluetooth">Turn on Bluetooth</string>
+
+    <!-- Device picker -->
+    <string name="picker_title">Nearby treadmills</string>
+    <string name="picker_scanning">Scanning for FTMS treadmills…</string>
+    <string name="picker_empty">No treadmills found. Make sure the treadmill is on and not connected to another app.</string>
+    <string name="picker_scan_again">Scan again</string>
+    <string name="picker_rssi">%1$d dBm</string>
+
+    <!-- Permissions -->
+    <string name="permission_title">Bluetooth permission needed</string>
+    <string name="permission_body">This app needs permission to find and connect to nearby Bluetooth devices to control your treadmill. It does not use your location.</string>
+    <string name="permission_grant">Grant permission</string>
+    <string name="permission_settings">Open settings</string>
+
+    <!-- Safety -->
+    <string name="safety_title">Connection lost</string>
+    <string name="safety_body">The treadmill may still be running. Use the treadmill\'s own STOP button or safety key if needed.</string>
+    <string name="dismiss">Dismiss</string>
+
+    <!-- Metrics -->
+    <string name="metric_speed">Speed</string>
+    <string name="metric_incline">Incline</string>
+    <string name="metric_distance">Distance</string>
+    <string name="metric_time">Time</string>
+    <string name="metric_pace">Pace</string>
+    <string name="metric_calories">Calories</string>
+    <string name="metric_heart_rate">Heart rate</string>
+    <string name="metric_status">Status</string>
+    <string name="unit_kmh">km/h</string>
+    <string name="unit_mph">mph</string>
+    <string name="unit_km">km</string>
+    <string name="unit_mi">mi</string>
+    <string name="unit_percent">%</string>
+    <string name="unit_min_per_km">min/km</string>
+    <string name="unit_min_per_mi">min/mi</string>
+    <string name="unit_kcal">kcal</string>
+    <string name="unit_bpm">bpm</string>
+    <string name="target_value">Target %1$s</string>
+
+    <!-- Controls -->
+    <string name="start">Start</string>
+    <string name="pause">Pause</string>
+    <string name="stop">STOP</string>
+    <string name="increase">Increase</string>
+    <string name="decrease">Decrease</string>
+
+    <!-- Menu -->
+    <string name="menu">More options</string>
+    <string name="menu_imperial">Use miles</string>
+    <string name="menu_auto_reconnect">Auto-reconnect</string>
+    <string name="menu_forget_device">Forget treadmill</string>
+
+    <!-- Messages -->
+    <string name="msg_not_connected">Not connected to a treadmill</string>
+    <string name="msg_connection_lost">Connection to treadmill lost</string>
+    <string name="msg_reconnected">Reconnected to treadmill</string>
+    <string name="msg_control_not_granted">The treadmill did not grant control. You can view data but commands may be rejected.</string>
+    <string name="msg_safety_key">Treadmill stopped by safety key</string>
+    <string name="msg_rejected_not_supported">The treadmill does not support that command</string>
+    <string name="msg_rejected_invalid">The treadmill rejected that value</string>
+    <string name="msg_rejected_failed">The treadmill could not perform that command</string>
+    <string name="msg_rejected_not_permitted">The treadmill did not allow that command. Try starting it first.</string>
+    <string name="msg_command_failed">Command failed: %1$s</string>
+    <string name="msg_scan_failed">Scan failed: %1$s</string>
+
+    <!-- Errors -->
+    <string name="error_adapter_off">Bluetooth is off</string>
+    <string name="error_permission">Bluetooth permission missing</string>
+    <string name="error_not_found">Treadmill not found</string>
+    <string name="error_disconnected">Disconnected</string>
+    <string name="error_timeout">Treadmill did not respond</string>
+    <string name="error_not_ftms">Device is not an FTMS treadmill</string>
+    <string name="error_gatt">Bluetooth error %1$d</string>
+    <string name="error_generic">Bluetooth error</string>
+
+    <!-- Training status -->
+    <string name="training_idle">Idle</string>
+    <string name="training_warm_up">Warming up</string>
+    <string name="training_cool_down">Cooling down</string>
+    <string name="training_manual">Running</string>
+    <string name="training_pre_workout">Ready</string>
+    <string name="training_post_workout">Finished</string>
+    <string name="training_interval">Interval</string>
+    <string name="training_other">Active</string>
+    <string name="machine_paused">Paused</string>
+    <string name="machine_stopped">Stopped</string>
+</resources>
