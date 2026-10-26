@@ -4,7 +4,7 @@
     <!-- Notification -->
     <string name="notification_channel_name">Treadmill connection</string>
     <string name="notification_channel_description">Shown while the app is connected to a treadmill</string>
-    <string name="notification_speed">Running at %1$s km/h</string>
+    <string name="notification_speed">Running at %1$s %2$s</string>
     <string name="action_stop">Stop belt</string>
     <string name="action_disconnect">Disconnect</string>
 
