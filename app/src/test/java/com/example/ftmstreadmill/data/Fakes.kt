@@ -9,6 +9,8 @@ import com.example.ftmstreadmill.ble.BleException
 import com.example.ftmstreadmill.ble.CharacteristicNotification
 import com.example.ftmstreadmill.ble.GattConnection
 import com.example.ftmstreadmill.ble.ScannedDevice
+import com.example.ftmstreadmill.data.db.SessionDao
+import com.example.ftmstreadmill.data.db.SessionEntity
 import com.example.ftmstreadmill.ftms.FtmsUuids
 import com.example.ftmstreadmill.ftms.model.ControlResult
 import kotlinx.coroutines.CompletableDeferred
@@ -17,6 +19,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flowOf
+import java.util.Locale
 import java.util.UUID
 
 class InMemoryPreferencesDataStore : DataStore<Preferences> {
@@ -131,5 +135,69 @@ class FakeGattConnection(
 
     private fun ensureOpen() {
         if (closed || _disconnected.isCompleted) throw BleException(BleError.Disconnected)
+    }
+}
+
+/** A controller whose commands are recorded and whose state tests drive directly. */
+class FakeTreadmillController : TreadmillController {
+    override val connectionState = MutableStateFlow<ConnectionState>(
+        ConnectionState.Ready(DeviceInfo("AA:BB:CC:DD:EE:FF", "Treadmill"), hasControl = true),
+    )
+    override val treadmillState = MutableStateFlow(TreadmillState())
+    override val events = MutableSharedFlow<TreadmillEvent>(extraBufferCapacity = 16)
+
+    /** Every command in order, e.g. "start", "speed 5.0", "incline 2.0". */
+    val commands = mutableListOf<String>()
+    var pauseOutcome: CommandOutcome = CommandOutcome.Success
+
+    override fun scan(): Flow<ScannedDevice> = emptyFlow()
+    override fun connect(device: DeviceInfo) = Unit
+    override fun disconnect() = Unit
+
+    override suspend fun start(): CommandOutcome {
+        commands += "start"
+        return CommandOutcome.Success
+    }
+
+    override suspend fun pause(): CommandOutcome {
+        commands += "pause"
+        return pauseOutcome
+    }
+
+    override suspend fun stop(): CommandOutcome {
+        commands += "stop"
+        return CommandOutcome.Success
+    }
+
+    override suspend fun setSpeed(kmh: Double): CommandOutcome {
+        val target = treadmillState.value.speedRange.clampAndSnap(kmh)
+        commands += "speed %.1f".format(Locale.US, target)
+        treadmillState.value = treadmillState.value.copy(targetSpeedKmh = target)
+        return CommandOutcome.Success
+    }
+
+    override suspend fun setIncline(percent: Double): CommandOutcome {
+        val target = treadmillState.value.inclineRange.clampAndSnap(percent)
+        commands += "incline %.1f".format(Locale.US, target)
+        treadmillState.value = treadmillState.value.copy(targetInclinePercent = target)
+        return CommandOutcome.Success
+    }
+}
+
+class FakeSessionDao : SessionDao {
+    private val rows = MutableStateFlow<List<SessionEntity>>(emptyList())
+    val inserted get() = rows.value
+
+    override fun observeAll() = rows
+    override fun observe(id: Long) = flowOf(rows.value.firstOrNull { it.id == id })
+    override suspend fun get(id: Long) = rows.value.firstOrNull { it.id == id }
+    override suspend fun insert(entity: SessionEntity): Long {
+        val id = rows.value.size + 1L
+        rows.value = rows.value + entity.copy(id = id)
+        return id
+    }
+    override suspend fun markExported(id: Long) = Unit
+    override suspend fun delete(id: Long) {
+        rows.value = rows.value.filterNot { it.id == id }
     }
 }

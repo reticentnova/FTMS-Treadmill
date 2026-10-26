@@ -14,6 +14,7 @@ import com.example.ftmstreadmill.data.TreadmillController
 import com.example.ftmstreadmill.data.TreadmillEvent
 import com.example.ftmstreadmill.data.TreadmillState
 import com.example.ftmstreadmill.ftms.model.ControlResult
+import com.example.ftmstreadmill.ui.common.Units
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -120,6 +121,7 @@ class ControlViewModel @Inject constructor(
                     }
                     TreadmillEvent.ControlNotGranted -> _messages.send(UiMessage.ControlNotGranted)
                     TreadmillEvent.StoppedBySafetyKey -> _messages.send(UiMessage.SafetyKey)
+                    is TreadmillEvent.Status -> Unit
                 }
             }
         }

@@ -1,0 +1,18 @@
+{
+  "format": "ftms-workout",
+  "version": 1,
+  "name": "Pyramid",
+  "description": "Build speed step by step, then come back down.",
+  "units": "mph",
+  "warmup": { "duration": "5:00", "speed": 2.0, "incline": 0 },
+  "intervals": [
+    { "name": "Level 1", "duration": "3:00", "speed": 3.5, "incline": 1 },
+    { "name": "Level 2", "duration": "3:00", "speed": 4.0, "incline": 1 },
+    { "name": "Level 3", "duration": "3:00", "speed": 4.5, "incline": 1 },
+    { "name": "Peak", "duration": "3:00", "speed": 5.0, "incline": 1 },
+    { "name": "Level 3", "duration": "3:00", "speed": 4.5, "incline": 1 },
+    { "name": "Level 2", "duration": "3:00", "speed": 4.0, "incline": 1 },
+    { "name": "Level 1", "duration": "3:00", "speed": 3.5, "incline": 1 }
+  ],
+  "cooldown": { "duration": "5:00", "speed": 2.0, "incline": 0 }
+}

@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Navigation -->
+    <string name="tab_treadmill">Treadmill</string>
+    <string name="tab_workouts">Workouts</string>
+    <string name="tab_history">History</string>
+    <string name="back">Back</string>
+    <string name="close">Close</string>
+    <string name="minimize">Minimize</string>
+
+    <!-- Common actions -->
+    <string name="ok">OK</string>
+    <string name="save">Save</string>
+    <string name="done">Done</string>
+    <string name="edit">Edit</string>
+    <string name="delete">Delete</string>
+    <string name="duplicate">Duplicate</string>
+    <string name="discard">Discard</string>
+    <string name="undo">Undo</string>
+    <string name="resume">Resume</string>
+    <string name="expand">Expand</string>
+    <string name="collapse">Collapse</string>
+    <string name="edit_value">Type a value</string>
+    <string name="minutes">Minutes</string>
+    <string name="seconds">Seconds</string>
+    <string name="duration">Duration</string>
+
+    <!-- Segments -->
+    <string name="segment_warmup">Warmup</string>
+    <string name="segment_cooldown">Cooldown</string>
+    <string name="segment_interval">Interval</string>
+    <string name="segment_interval_n">Interval %1$d</string>
+    <!-- 1 duration, 2 speed, 3 speed unit, 4 incline -->
+    <string name="segment_summary">%1$s · %2$s %3$s · %4$s%%</string>
+    <string name="segments">Segments</string>
+    <string name="intervals">Intervals</string>
+    <string name="repeat">Repeat</string>
+    <string name="repeat_times">Repeat %1$d×</string>
+    <string name="repetitions">Repetitions</string>
+    <plurals name="interval_count">
+        <item quantity="one">%1$d interval</item>
+        <item quantity="other">%1$d intervals</item>
+    </plurals>
+    <string name="approx_distance">≈%1$s %2$s</string>
+    <string name="profile_chart_description">Workout profile. Taller bars are faster; darker bars are steeper.</string>
+
+    <!-- Workouts list -->
+    <string name="new_workout">New workout</string>
+    <string name="my_workouts_count">My workouts (%1$d)</string>
+    <string name="presets">Presets</string>
+    <string name="browse_presets">Browse presets</string>
+    <string name="workout_settings">Workout settings</string>
+    <string name="import_workouts">Import workouts</string>
+    <string name="export">Export</string>
+    <string name="export_all">Export all workouts</string>
+    <string name="export_done">Workout file saved</string>
+    <string name="export_failed">Couldn\'t save the file</string>
+    <string name="import_failed">Couldn\'t read that file</string>
+    <plurals name="imported_workouts">
+        <item quantity="one">Imported %1$d workout</item>
+        <item quantity="other">Imported %1$d workouts</item>
+    </plurals>
+    <string name="workout_deleted">Deleted \"%1$s\"</string>
+    <string name="workout_copied">Added a copy of \"%1$s\" to My workouts</string>
+    <string name="workout_options">Options for %1$s</string>
+    <string name="add_to_my_workouts">Add to My workouts</string>
+    <string name="customize">Customize</string>
+    <string name="empty_workouts_title">No workouts yet</string>
+    <string name="empty_workouts_body">Build your own interval workout, or start from one of the presets and make it yours.</string>
+
+    <!-- Workout detail -->
+    <string name="start_workout">Start workout</string>
+    <string name="connect_treadmill">Connect treadmill</string>
+    <string name="connect_to_start">Connect your treadmill to start this workout.</string>
+    <string name="monitor_only_warning">The treadmill hasn\'t given this app control, so speed and incline can\'t be set automatically.</string>
+    <string name="workout_not_found">This workout no longer exists.</string>
+    <string name="delete_workout_title">Delete workout?</string>
+    <string name="delete_workout_body">\"%1$s\" will be removed. Your workout history is kept.</string>
+    <string name="already_running_title">A workout is in progress</string>
+    <string name="already_running_body">Finish or end the current workout before starting another.</string>
+    <string name="open_workout">Open workout</string>
+
+    <!-- Editor -->
+    <string name="edit_workout">Edit workout</string>
+    <string name="workout_name">Workout name</string>
+    <string name="workout_description">Description (optional)</string>
+    <string name="interval_name">Interval name (optional)</string>
+    <string name="not_included">Not included</string>
+    <string name="add_interval">Interval</string>
+    <string name="add_repeat">Repeat block</string>
+    <string name="add_to_block">Add interval</string>
+    <string name="delete_block">Delete block</string>
+    <string name="move_up">Move up</string>
+    <string name="move_down">Move down</string>
+    <string name="reorder">Drag to reorder</string>
+    <string name="interval_removed">Interval removed</string>
+    <string name="editor_name_missing">Give the workout a name</string>
+    <string name="editor_needs_interval">Add at least one interval</string>
+    <string name="discard_changes_title">Discard changes?</string>
+    <string name="discard_changes_body">Your changes to this workout haven\'t been saved.</string>
+    <string name="keep_editing">Keep editing</string>
+
+    <!-- Running -->
+    <string name="get_ready">Get ready</string>
+    <string name="run_starting">Starting…</string>
+    <string name="run_paused">Paused</string>
+    <string name="paused_user">Tap play to continue.</string>
+    <string name="paused_treadmill">Paused on the treadmill. Press start on the treadmill or tap play.</string>
+    <string name="paused_disconnected">Treadmill disconnected. Waiting for it to reconnect…</string>
+    <string name="paused_reconnected">Treadmill reconnected. Tap play when you\'re ready.</string>
+    <string name="interval_of">Interval %1$d of %2$d</string>
+    <string name="round_of">Round %1$d of %2$d</string>
+    <string name="elapsed_value">%1$s elapsed</string>
+    <string name="remaining_value">%1$s left</string>
+    <string name="overall_progress_description">Workout %1$d%% complete</string>
+    <string name="adjusted">Adjusted</string>
+    <string name="adjusted_note">Changes apply to this interval only.</string>
+    <string name="reset_to_plan">Reset</string>
+    <string name="up_next">Up next</string>
+    <string name="up_next_finish">Finish</string>
+    <string name="skip_interval">Skip to next interval</string>
+    <string name="end_workout">End workout</string>
+    <string name="end_workout_title">End workout?</string>
+    <string name="end_workout_body">The treadmill will stop and the workout so far will be saved to History.</string>
+    <string name="keep_going">Keep going</string>
+    <string name="no_workout_running">No workout is running.</string>
+    <!-- 1 segment, 2 time left, 3 speed, 4 unit -->
+    <string name="now_running_detail">%1$s · %2$s left · %3$s %4$s</string>
+    <string name="now_running_finished">Finished. Tap to see your summary.</string>
+
+    <!-- Summary and history -->
+    <string name="summary_complete">Workout complete</string>
+    <string name="summary_ended">Workout ended</string>
+    <string name="end_reason_app">Ended early</string>
+    <string name="end_reason_treadmill">Stopped on the treadmill</string>
+    <string name="end_reason_safety">Stopped by the safety key</string>
+    <string name="avg_speed">Avg speed</string>
+    <string name="avg_value">avg %1$s %2$s</string>
+    <!-- 1 duration, 2 speed, 3 unit, 4 incline -->
+    <string name="planned_line">Planned %1$s · %2$s %3$s · %4$s%%</string>
+    <string name="planned_vs_actual_description">Planned profile with your actual average speed in each segment</string>
+    <string name="planned_vs_actual_legend">Bars: planned · Lines: your average speed</string>
+    <string name="skipped">Skipped</string>
+    <string name="completed">Completed</string>
+    <string name="ended_early">Ended early</string>
+    <string name="this_week">This week</string>
+    <string name="workouts_label">Workouts</string>
+    <string name="empty_history_title">No workouts yet</string>
+    <string name="empty_history_body">Completed workouts appear here with time, distance and how each interval went.</string>
+    <string name="browse_workouts">Browse workouts</string>
+    <string name="run_again">Run again</string>
+    <string name="session_not_found">This workout record no longer exists.</string>
+    <string name="delete_session_title">Delete from history?</string>
+    <string name="delete_session_body">This record will be removed from the app. Anything already sent to Health Connect stays there.</string>
+
+    <!-- Settings -->
+    <string name="settings_units">Units</string>
+    <string name="settings_cues">Cues</string>
+    <string name="cue_sound">Beeps</string>
+    <string name="cue_sound_desc">3–2–1 countdown before each interval change</string>
+    <string name="cue_voice">Voice announcements</string>
+    <string name="cue_voice_desc">Announces each interval\'s speed, incline and length</string>
+    <string name="cue_vibrate">Vibration</string>
+    <string name="cue_vibrate_desc">Buzzes when the interval changes</string>
+    <string name="settings_defaults">Warmup and cooldown</string>
+    <string name="settings_defaults_desc">Used when you create a new workout. You can still change them per workout.</string>
+
+    <!-- Health Connect -->
+    <string name="health_connect">Health Connect</string>
+    <string name="hc_send">Send to Health Connect</string>
+    <string name="hc_sent">Sent to Health Connect</string>
+    <string name="hc_install">Get Health Connect</string>
+    <string name="hc_needs_install">Install or update Health Connect to share workouts with other fitness apps.</string>
+    <string name="hc_not_available">Health Connect isn\'t available on this device.</string>
+    <string name="hc_permission_denied">Health Connect access wasn\'t granted.</string>
+    <string name="hc_permission_needed">Tap to allow this app to write workouts to Health Connect.</string>
+    <string name="hc_failed">Couldn\'t send to Health Connect. Try again later.</string>
+    <string name="hc_auto_export">Send workouts automatically</string>
+    <string name="hc_auto_export_desc">Each finished workout is written to Health Connect, so it shows up in apps like Google Fit and Samsung Health.</string>
+    <string name="hc_rationale_title">Health Connect data</string>
+    <string name="hc_rationale_body">FTMS Treadmill writes your completed treadmill workouts to Health Connect so other fitness apps can show them. It doesn\'t read any of your health data.</string>
+    <string name="hc_rationale_data">Data written: exercise sessions with their intervals, distance, calories burned (when the treadmill reports them) and speed. The data stays on your device unless you share it from Health Connect.</string>
+
+    <!-- Notification -->
+    <string name="notification_interval">Interval %1$d/%2$d</string>
+    <string name="notification_workout_left">%1$s · %2$s left</string>
+    <string name="notification_workout_paused">Paused · %1$s</string>
+
+    <!-- Spoken cues -->
+    <!-- 1 name, 2 speed, 3 unit words, 4 incline, 5 length -->
+    <string name="cue_starting">Starting %1$s. %2$s %3$s, %4$s percent incline, for %5$s.</string>
+    <string name="cue_segment">%1$s. %2$s %3$s, %4$s percent, for %5$s.</string>
+    <string name="cue_mph">miles per hour</string>
+    <string name="cue_kmh">kilometers per hour</string>
+    <string name="cue_halfway">Halfway there.</string>
+    <string name="cue_paused">Workout paused.</string>
+    <string name="cue_resumed">Resuming.</string>
+    <string name="cue_complete">Workout complete. Great job!</string>
+    <string name="cue_ended">Workout ended.</string>
+    <plurals name="cue_minutes">
+        <item quantity="one">%1$d minute</item>
+        <item quantity="other">%1$d minutes</item>
+    </plurals>
+    <plurals name="cue_seconds">
+        <item quantity="one">%1$d second</item>
+        <item quantity="other">%1$d seconds</item>
+    </plurals>
+</resources>

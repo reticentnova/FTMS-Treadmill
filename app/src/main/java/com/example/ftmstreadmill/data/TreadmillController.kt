@@ -78,4 +78,7 @@ sealed interface TreadmillEvent {
     data object Reconnected : TreadmillEvent
     data object ControlNotGranted : TreadmillEvent
     data object StoppedBySafetyKey : TreadmillEvent
+
+    /** Every Machine Status notification, including repeats, for consumers that track machine state. */
+    data class Status(val status: MachineStatus) : TreadmillEvent
 }

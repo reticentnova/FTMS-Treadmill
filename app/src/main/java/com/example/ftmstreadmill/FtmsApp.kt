@@ -5,7 +5,9 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import com.example.ftmstreadmill.data.TreadmillController
 import com.example.ftmstreadmill.di.ApplicationScope
+import com.example.ftmstreadmill.health.HealthConnectExporter
 import com.example.ftmstreadmill.service.TreadmillConnectionService
+import com.example.ftmstreadmill.workout.WorkoutCues
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -21,9 +23,15 @@ class FtmsApp : Application() {
 
     @Inject @ApplicationScope lateinit var appScope: CoroutineScope
 
+    @Inject lateinit var workoutCues: WorkoutCues
+
+    @Inject lateinit var healthConnectExporter: HealthConnectExporter
+
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        workoutCues.start()
+        healthConnectExporter.startAutoExport()
 
         // Keep the process alive with a foreground service for as long as a connection is wanted.
         // The service stops itself when the session ends.

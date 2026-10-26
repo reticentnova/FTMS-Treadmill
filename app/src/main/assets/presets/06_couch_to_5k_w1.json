@@ -1,0 +1,18 @@
+{
+  "format": "ftms-workout",
+  "version": 1,
+  "name": "Couch to 5K: Week 1",
+  "description": "Alternate 60 seconds of jogging with 90 seconds of walking.",
+  "units": "mph",
+  "warmup": { "duration": "5:00", "speed": 3.0, "incline": 0 },
+  "intervals": [
+    {
+      "repeat": 8,
+      "intervals": [
+        { "name": "Jog", "duration": "1:00", "speed": 5.0, "incline": 1 },
+        { "name": "Walk", "duration": "1:30", "speed": 3.2, "incline": 1 }
+      ]
+    }
+  ],
+  "cooldown": { "duration": "5:00", "speed": 2.0, "incline": 0 }
+}

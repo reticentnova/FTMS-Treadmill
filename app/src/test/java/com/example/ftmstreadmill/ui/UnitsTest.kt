@@ -1,7 +1,7 @@
 package com.example.ftmstreadmill.ui
 
 import com.example.ftmstreadmill.ftms.TreadmillDataParser
-import com.example.ftmstreadmill.ui.control.Units
+import com.example.ftmstreadmill.ui.common.Units
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before

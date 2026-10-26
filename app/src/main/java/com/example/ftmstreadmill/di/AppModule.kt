@@ -6,10 +6,16 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.room.Room
 import com.example.ftmstreadmill.ble.AndroidBleClient
 import com.example.ftmstreadmill.ble.BleClient
 import com.example.ftmstreadmill.data.TreadmillController
 import com.example.ftmstreadmill.data.TreadmillRepository
+import com.example.ftmstreadmill.data.db.AppDatabase
+import com.example.ftmstreadmill.data.db.SessionDao
+import com.example.ftmstreadmill.data.db.WorkoutDao
+import com.example.ftmstreadmill.workout.Clock
+import com.example.ftmstreadmill.workout.SystemClock
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -45,6 +51,20 @@ object AppModule {
     @Singleton
     fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
         PreferenceDataStoreFactory.create { context.preferencesDataStoreFile(DATASTORE_NAME) }
+
+    @Provides
+    @Singleton
+    fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
+        Room.databaseBuilder(context, AppDatabase::class.java, AppDatabase.NAME).build()
+
+    @Provides
+    fun provideWorkoutDao(db: AppDatabase): WorkoutDao = db.workoutDao()
+
+    @Provides
+    fun provideSessionDao(db: AppDatabase): SessionDao = db.sessionDao()
+
+    @Provides
+    fun provideClock(): Clock = SystemClock
 
     const val DATASTORE_NAME = "settings"
 }

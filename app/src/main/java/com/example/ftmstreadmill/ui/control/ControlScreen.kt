@@ -65,6 +65,7 @@ import com.example.ftmstreadmill.ble.AndroidBleClient
 import com.example.ftmstreadmill.data.ConnectionState
 import com.example.ftmstreadmill.ftms.model.MachineStatus
 import com.example.ftmstreadmill.ftms.model.TrainingStatus
+import com.example.ftmstreadmill.ui.common.Units
 import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)

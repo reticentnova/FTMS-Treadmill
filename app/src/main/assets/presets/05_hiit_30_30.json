@@ -1,0 +1,18 @@
+{
+  "format": "ftms-workout",
+  "version": 1,
+  "name": "HIIT 30/30",
+  "description": "Eight rounds of 30 seconds hard, 30 seconds easy.",
+  "units": "mph",
+  "warmup": { "duration": "5:00", "speed": 2.5, "incline": 0 },
+  "intervals": [
+    {
+      "repeat": 8,
+      "intervals": [
+        { "name": "Sprint", "duration": "0:30", "speed": 7.0, "incline": 1 },
+        { "name": "Recover", "duration": "0:30", "speed": 3.0, "incline": 0 }
+      ]
+    }
+  ],
+  "cooldown": { "duration": "5:00", "speed": 2.0, "incline": 0 }
+}
