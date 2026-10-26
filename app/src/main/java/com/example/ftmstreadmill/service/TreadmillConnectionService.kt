@@ -15,13 +15,15 @@ import androidx.lifecycle.lifecycleScope
 import com.example.ftmstreadmill.MainActivity
 import com.example.ftmstreadmill.R
 import com.example.ftmstreadmill.data.ConnectionState
+import com.example.ftmstreadmill.data.SettingsRepository
 import com.example.ftmstreadmill.data.TreadmillController
 import com.example.ftmstreadmill.data.TreadmillState
+import com.example.ftmstreadmill.data.defaultImperial
+import com.example.ftmstreadmill.ui.control.Units
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
-import java.util.Locale
 import javax.inject.Inject
 
 /**
@@ -35,7 +37,12 @@ class TreadmillConnectionService : LifecycleService() {
 
     @Inject lateinit var controller: TreadmillController
 
+    @Inject lateinit var settingsRepository: SettingsRepository
+
     private var observing = false
+
+    /** Latest unit preference; seeded with the locale default until DataStore emits. */
+    private var useImperialUnits = defaultImperial()
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
@@ -73,9 +80,12 @@ class TreadmillConnectionService : LifecycleService() {
         observing = true
         val notificationManager = getSystemService(NotificationManager::class.java)
         lifecycleScope.launch {
-            combine(controller.connectionState, controller.treadmillState) { c, t -> c to t }
+            combine(controller.connectionState, controller.treadmillState, settingsRepository.settings) { c, t, s ->
+                Triple(c, t, s.useImperialUnits)
+            }
                 .distinctUntilChanged()
-                .collect { (connection, treadmill) ->
+                .collect { (connection, treadmill, imperial) ->
+                    useImperialUnits = imperial
                     if (!connection.isSessionActive) {
                         ServiceCompat.stopForeground(this@TreadmillConnectionService, ServiceCompat.STOP_FOREGROUND_REMOVE)
                         stopSelf()
@@ -93,8 +103,15 @@ class TreadmillConnectionService : LifecycleService() {
             PendingIntent.FLAG_IMMUTABLE,
         )
         val text = when (connection) {
+            // Treadmill data is always km/h; convert to the user's units like the in-app display does.
             is ConnectionState.Ready -> treadmill.data.speedKmh
-                ?.let { getString(R.string.notification_speed, String.format(Locale.getDefault(), "%.1f", it)) }
+                ?.let {
+                    getString(
+                        R.string.notification_speed,
+                        Units.formatSpeed(it, useImperialUnits),
+                        getString(if (useImperialUnits) R.string.unit_mph else R.string.unit_kmh),
+                    )
+                }
                 ?: getString(R.string.state_connected)
             is ConnectionState.Reconnecting -> getString(R.string.state_reconnecting)
             is ConnectionState.BluetoothOff -> getString(R.string.state_bluetooth_off)
