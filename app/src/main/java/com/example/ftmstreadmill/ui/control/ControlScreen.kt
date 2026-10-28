@@ -77,11 +77,15 @@ fun ControlScreen(viewModel: ControlViewModel = hiltViewModel()) {
     var showPicker by rememberSaveable { mutableStateOf(false) }
 
     // Permissions are re-checked on every resume because the user can revoke them in Settings.
-    var hasPermissions by remember { mutableStateOf(false) }
-    LifecycleResumeEffect(Unit) {
-        hasPermissions = AndroidBleClient.REQUIRED_PERMISSIONS.all {
+    // Seeded with the real check so the permission card doesn't flash when the tab is re-entered.
+    val checkPermissions = {
+        AndroidBleClient.REQUIRED_PERMISSIONS.all {
             ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
         }
+    }
+    var hasPermissions by remember { mutableStateOf(checkPermissions()) }
+    LifecycleResumeEffect(Unit) {
+        hasPermissions = checkPermissions()
         onPauseOrDispose { }
     }
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
