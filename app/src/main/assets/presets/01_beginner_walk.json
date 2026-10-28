@@ -1,0 +1,16 @@
+{
+  "format": "ftms-workout",
+  "version": 1,
+  "name": "Beginner Walk",
+  "description": "An easy 30-minute walk with gentle pickups.",
+  "units": "mph",
+  "warmup": { "duration": "5:00", "speed": 2.0, "incline": 0 },
+  "intervals": [
+    { "name": "Steady", "duration": "5:00", "speed": 2.8, "incline": 0 },
+    { "name": "Brisk", "duration": "3:00", "speed": 3.2, "incline": 1 },
+    { "name": "Steady", "duration": "5:00", "speed": 2.8, "incline": 0 },
+    { "name": "Brisk", "duration": "3:00", "speed": 3.2, "incline": 1 },
+    { "name": "Steady", "duration": "4:00", "speed": 2.8, "incline": 0 }
+  ],
+  "cooldown": { "duration": "5:00", "speed": 2.0, "incline": 0 }
+}

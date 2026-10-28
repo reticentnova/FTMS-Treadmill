@@ -1,4 +1,4 @@
-package com.example.ftmstreadmill.ui.control
+package com.example.ftmstreadmill.ui.common
 
 import java.util.Locale
 

@@ -19,10 +19,15 @@ import com.example.ftmstreadmill.data.SettingsRepository
 import com.example.ftmstreadmill.data.TreadmillController
 import com.example.ftmstreadmill.data.TreadmillState
 import com.example.ftmstreadmill.data.defaultImperial
-import com.example.ftmstreadmill.ui.control.Units
+import com.example.ftmstreadmill.ui.common.Units
+import com.example.ftmstreadmill.workout.RunPhase
+import com.example.ftmstreadmill.workout.WorkoutEngine
+import com.example.ftmstreadmill.workout.WorkoutRunState
+import com.example.ftmstreadmill.workout.model.SegmentKind
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -39,6 +44,8 @@ class TreadmillConnectionService : LifecycleService() {
 
     @Inject lateinit var settingsRepository: SettingsRepository
 
+    @Inject lateinit var workoutEngine: WorkoutEngine
+
     private var observing = false
 
     /** Latest unit preference; seeded with the locale default until DataStore emits. */
@@ -49,6 +56,8 @@ class TreadmillConnectionService : LifecycleService() {
         when (intent?.action) {
             ACTION_STOP_BELT -> lifecycleScope.launch { controller.stop() }
             ACTION_DISCONNECT -> controller.disconnect()
+            ACTION_PAUSE_WORKOUT -> workoutEngine.pause()
+            ACTION_RESUME_WORKOUT -> workoutEngine.resume()
         }
 
         // startForegroundService() obliges us to call startForeground() even if we're about to stop,
@@ -58,7 +67,7 @@ class TreadmillConnectionService : LifecycleService() {
             ServiceCompat.startForeground(
                 this,
                 NOTIFICATION_ID,
-                buildNotification(state, controller.treadmillState.value),
+                buildNotification(state, controller.treadmillState.value, workoutEngine.state.value.toProgress()),
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE,
             )
         } catch (e: ForegroundServiceStartNotAllowedException) {
@@ -80,23 +89,74 @@ class TreadmillConnectionService : LifecycleService() {
         observing = true
         val notificationManager = getSystemService(NotificationManager::class.java)
         lifecycleScope.launch {
-            combine(controller.connectionState, controller.treadmillState, settingsRepository.settings) { c, t, s ->
-                Triple(c, t, s.useImperialUnits)
-            }
+            combine(
+                controller.connectionState,
+                controller.treadmillState,
+                settingsRepository.settings,
+                // Engine state ticks four times a second; only whole seconds matter here.
+                workoutEngine.state.map { it.toProgress() }.distinctUntilChanged(),
+            ) { c, t, s, w -> NotificationInputs(c, t, s.useImperialUnits, w) }
                 .distinctUntilChanged()
-                .collect { (connection, treadmill, imperial) ->
+                .collect { (connection, treadmill, imperial, workout) ->
                     useImperialUnits = imperial
                     if (!connection.isSessionActive) {
                         ServiceCompat.stopForeground(this@TreadmillConnectionService, ServiceCompat.STOP_FOREGROUND_REMOVE)
                         stopSelf()
                     } else {
-                        notificationManager.notify(NOTIFICATION_ID, buildNotification(connection, treadmill))
+                        notificationManager.notify(NOTIFICATION_ID, buildNotification(connection, treadmill, workout))
                     }
                 }
         }
     }
 
-    private fun buildNotification(connection: ConnectionState, treadmill: TreadmillState): Notification {
+    private data class NotificationInputs(
+        val connection: ConnectionState,
+        val treadmill: TreadmillState,
+        val imperial: Boolean,
+        val workout: WorkoutProgress?,
+    )
+
+    /** The parts of a running workout the notification shows. */
+    private data class WorkoutProgress(
+        val name: String,
+        val segmentLabel: String?,
+        val kind: SegmentKind,
+        val intervalNumber: Int?,
+        val intervalCount: Int,
+        val secondsLeft: Int,
+        val progressPermille: Int,
+        val paused: Boolean,
+    )
+
+    private fun WorkoutRunState.toProgress(): WorkoutProgress? {
+        val active = this as? WorkoutRunState.Active ?: return null
+        return WorkoutProgress(
+            name = active.workout.name,
+            segmentLabel = active.current.name,
+            kind = active.current.kind,
+            intervalNumber = active.current.intervalNumber,
+            intervalCount = active.plan.intervalCount,
+            secondsLeft = active.segmentRemainingSec,
+            progressPermille = (active.planProgress * 1000).toInt(),
+            paused = active.phase == RunPhase.PAUSED,
+        )
+    }
+
+    private fun workoutText(w: WorkoutProgress): String {
+        val segment = when (w.kind) {
+            SegmentKind.WARMUP -> getString(R.string.segment_warmup)
+            SegmentKind.COOLDOWN -> getString(R.string.segment_cooldown)
+            SegmentKind.INTERVAL -> getString(R.string.notification_interval, w.intervalNumber ?: 0, w.intervalCount)
+        }
+        val name = w.segmentLabel?.let { " · $it" }.orEmpty()
+        return if (w.paused) {
+            getString(R.string.notification_workout_paused, segment + name)
+        } else {
+            getString(R.string.notification_workout_left, segment + name, Units.formatDuration(w.secondsLeft))
+        }
+    }
+
+    private fun buildNotification(connection: ConnectionState, treadmill: TreadmillState, workout: WorkoutProgress?): Notification {
         val openApp = PendingIntent.getActivity(
             this, 0,
             Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
@@ -119,13 +179,22 @@ class TreadmillConnectionService : LifecycleService() {
         }
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_treadmill)
-            .setContentTitle(getString(R.string.app_name))
-            .setContentText(text)
+            .setContentTitle(workout?.name ?: getString(R.string.app_name))
+            .setContentText(workout?.let(::workoutText) ?: text)
             .setContentIntent(openApp)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .apply {
+                if (workout != null) {
+                    setProgress(1000, workout.progressPermille, false)
+                    setSubText(text)
+                    if (workout.paused) {
+                        addAction(0, getString(R.string.resume), serviceIntent(ACTION_RESUME_WORKOUT, 3))
+                    } else {
+                        addAction(0, getString(R.string.pause), serviceIntent(ACTION_PAUSE_WORKOUT, 4))
+                    }
+                }
                 if (connection is ConnectionState.Ready && treadmill.isBeltMoving) {
                     addAction(0, getString(R.string.action_stop), serviceIntent(ACTION_STOP_BELT, 1))
                 }
@@ -146,6 +215,8 @@ class TreadmillConnectionService : LifecycleService() {
         private const val NOTIFICATION_ID = 1
         private const val ACTION_STOP_BELT = "com.example.ftmstreadmill.action.STOP_BELT"
         private const val ACTION_DISCONNECT = "com.example.ftmstreadmill.action.DISCONNECT"
+        private const val ACTION_PAUSE_WORKOUT = "com.example.ftmstreadmill.action.PAUSE_WORKOUT"
+        private const val ACTION_RESUME_WORKOUT = "com.example.ftmstreadmill.action.RESUME_WORKOUT"
 
         fun start(context: Context) {
             try {

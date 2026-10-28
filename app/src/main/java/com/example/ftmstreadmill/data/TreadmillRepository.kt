@@ -287,6 +287,7 @@ class TreadmillRepository @Inject constructor(
                 else -> it.copy(machineStatus = status)
             }
         }
+        _events.tryEmit(TreadmillEvent.Status(status))
         when (status) {
             MachineStatus.StoppedBySafetyKey -> _events.tryEmit(TreadmillEvent.StoppedBySafetyKey)
             MachineStatus.ControlPermissionLost -> launch {

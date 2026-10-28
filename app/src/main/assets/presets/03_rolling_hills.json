@@ -1,0 +1,18 @@
+{
+  "format": "ftms-workout",
+  "version": 1,
+  "name": "Rolling Hills",
+  "description": "Alternate climbs and flats at a steady walking pace.",
+  "units": "mph",
+  "warmup": { "duration": "5:00", "speed": 2.0, "incline": 0 },
+  "intervals": [
+    {
+      "repeat": 5,
+      "intervals": [
+        { "name": "Hill", "duration": "2:00", "speed": 3.2, "incline": 6 },
+        { "name": "Flat", "duration": "2:00", "speed": 3.4, "incline": 1 }
+      ]
+    }
+  ],
+  "cooldown": { "duration": "5:00", "speed": 2.0, "incline": 0 }
+}
