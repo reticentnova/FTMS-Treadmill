@@ -69,6 +69,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -533,7 +534,8 @@ private fun RepeatCard(
     val colors = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth().animateContentSize(),
-        colors = CardDefaults.cardColors(containerColor = colors.secondaryContainer.copy(alpha = 0.5f)),
+        // Opaque, so SwipeToDelete's red background can't show through the card.
+        colors = CardDefaults.cardColors(containerColor = colors.secondaryContainer.copy(alpha = 0.5f).compositeOver(colors.surface)),
         elevation = CardDefaults.cardElevation(defaultElevation = if (dragging) 8.dp else 0.dp),
     ) {
         Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
