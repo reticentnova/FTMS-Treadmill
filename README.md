@@ -116,12 +116,13 @@ Tap **Save** when you're done. If you close the editor without saving, the app a
 
 <br clear="right">
 
-### Workout settings
+### Settings
 
-<img src="docs/screenshots/settings.png" width="240" align="right" alt="Workout settings">
+<img src="docs/screenshots/settings.png" width="240" align="right" alt="Settings">
 
 Tap the ⚙ icon on the Workouts tab to set:
 
+- **Appearance**: light or dark mode and the app's colors. See [Themes](#themes).
 - **Units**: miles or kilometers.
 - **Cues** during a workout:
   - **Beeps**: a 3–2–1 countdown before each interval change.
@@ -129,6 +130,36 @@ Tap the ⚙ icon on the Workouts tab to set:
   - **Vibration**: buzzes when the interval changes.
 - **Warmup and cooldown**: the default duration, speed and incline for new workouts. You can still change them in each workout.
 - **Health Connect**: turn on **Send workouts automatically** to export every finished workout.
+
+<br clear="right">
+
+## Themes
+
+<p align="center">
+  <img src="docs/screenshots/theme-ocean-light.png" width="240" alt="Workouts tab in the Ocean theme, light mode">
+  <img src="docs/screenshots/theme-sunset-dark.png" width="240" alt="Workouts tab in the Sunset theme, dark mode">
+</p>
+
+You can change the app's colors in **Settings** → **Appearance**:
+
+- **Light or dark**: **System** follows your phone's setting. **Light** and **Dark** always use that mode.
+- **Colors**: each theme is a main color and an accent color. The app works out the rest of its colors from those two, in both light and dark mode.
+  - **Wallpaper** (the default) uses colors from your phone's wallpaper.
+  - **Ocean**, **Forest**, **Sunset**, **Grape**, **Graphite** and **Cherry** are ready-made themes.
+  - **Custom** uses colors you choose.
+
+Your choice applies right away and is remembered next time you open the app.
+
+### Making your own theme
+
+<img src="docs/screenshots/theme-custom.png" width="240" align="right" alt="Custom theme editor">
+
+1. Tap **Custom** to switch to your custom colors.
+2. Tap **Custom** again to open the **Custom theme** editor.
+3. For **Main color** and **Accent color**, tap a color circle, or type a color code like `#1E88E5` in the **Hex** box.
+4. Check the **Preview**, then tap **Save**.
+
+There's one custom theme. Saving replaces the colors you had before.
 
 <br clear="right">
 
@@ -146,7 +177,7 @@ From there you can **Run again**, **Send to Health Connect**, or delete the reco
 
 FTMS Treadmill can write finished workouts to Health Connect so other fitness apps can show them. It writes exercise sessions (with their intervals), distance, calories burned (when the treadmill reports them) and speed. It **never reads** any of your health data.
 
-To export one workout, open it in History and tap **Send to Health Connect**. The first time you do this, Health Connect asks you to allow access. To export every workout automatically, turn on **Send workouts automatically** in Workout settings.
+To export one workout, open it in History and tap **Send to Health Connect**. The first time you do this, Health Connect asks you to allow access. To export every workout automatically, turn on **Send workouts automatically** in Settings.
 
 ## Importing and exporting workouts
 
