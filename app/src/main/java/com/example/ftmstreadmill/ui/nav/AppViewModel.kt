@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.ftmstreadmill.data.SettingsRepository
+import com.example.ftmstreadmill.data.ThemeSettings
 import com.example.ftmstreadmill.data.WorkoutRepository
 import com.example.ftmstreadmill.workout.WorkoutEngine
 import com.example.ftmstreadmill.workout.io.WorkoutFormatException
@@ -14,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -39,6 +41,10 @@ class AppViewModel @Inject constructor(
 
     val imperial = settings.settings.map { it.useImperialUnits }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    /** Null until the stored theme has loaded, so the first frame isn't drawn in the wrong colours. */
+    val theme: StateFlow<ThemeSettings?> = settings.settings.map { it.theme }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val _imports = Channel<ImportResult>(Channel.BUFFERED)
     val imports: Flow<ImportResult> = _imports.receiveAsFlow()

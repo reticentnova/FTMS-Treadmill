@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.doublePreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
@@ -21,6 +22,7 @@ data class Settings(
     val useImperialUnits: Boolean = defaultImperial(),
     val autoReconnect: Boolean = true,
     val workout: WorkoutSettings = WorkoutSettings(),
+    val theme: ThemeSettings = ThemeSettings(),
 )
 
 /** A default warmup or cooldown. Speed is stored in km/h like all data-layer speeds. */
@@ -62,6 +64,15 @@ class SettingsRepository @Inject constructor(
                     cueVoice = prefs[CUE_VOICE] ?: true,
                     cueVibrate = prefs[CUE_VIBRATE] ?: true,
                     healthConnectAutoExport = prefs[HEALTH_CONNECT_AUTO] ?: false,
+                ),
+                theme = ThemeSettings(
+                    presetId = prefs[THEME_PRESET] ?: ThemeSettings.PRESET_DYNAMIC,
+                    custom = ThemeColors(
+                        primary = prefs[THEME_CUSTOM_PRIMARY] ?: ThemeSettings.DEFAULT_CUSTOM.primary,
+                        secondary = prefs[THEME_CUSTOM_SECONDARY] ?: ThemeSettings.DEFAULT_CUSTOM.secondary,
+                    ),
+                    darkMode = prefs[THEME_DARK_MODE]?.let { name -> DarkMode.entries.firstOrNull { it.name == name } }
+                        ?: DarkMode.SYSTEM,
                 ),
             )
         }
@@ -109,6 +120,23 @@ class SettingsRepository @Inject constructor(
         dataStore.edit { it[HEALTH_CONNECT_AUTO] = value }
     }
 
+    suspend fun setThemePreset(id: String) {
+        dataStore.edit { it[THEME_PRESET] = id }
+    }
+
+    /** Saves the custom colours and switches to the custom theme. */
+    suspend fun setCustomThemeColors(value: ThemeColors) {
+        dataStore.edit {
+            it[THEME_CUSTOM_PRIMARY] = value.primary
+            it[THEME_CUSTOM_SECONDARY] = value.secondary
+            it[THEME_PRESET] = ThemeSettings.PRESET_CUSTOM
+        }
+    }
+
+    suspend fun setDarkMode(value: DarkMode) {
+        dataStore.edit { it[THEME_DARK_MODE] = value.name }
+    }
+
     private suspend fun setSegmentDefaults(
         value: SegmentDefaults,
         sec: Preferences.Key<Int>,
@@ -150,5 +178,9 @@ class SettingsRepository @Inject constructor(
         val CUE_VOICE = booleanPreferencesKey("cue_voice")
         val CUE_VIBRATE = booleanPreferencesKey("cue_vibrate")
         val HEALTH_CONNECT_AUTO = booleanPreferencesKey("health_connect_auto_export")
+        val THEME_PRESET = stringPreferencesKey("theme_preset")
+        val THEME_CUSTOM_PRIMARY = longPreferencesKey("theme_custom_primary")
+        val THEME_CUSTOM_SECONDARY = longPreferencesKey("theme_custom_secondary")
+        val THEME_DARK_MODE = stringPreferencesKey("theme_dark_mode")
     }
 }

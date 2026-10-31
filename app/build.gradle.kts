@@ -67,6 +67,7 @@ dependencies {
     implementation(libs.androidx.health.connect)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.reorderable)
+    implementation(libs.material.kolor)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.hilt.android)

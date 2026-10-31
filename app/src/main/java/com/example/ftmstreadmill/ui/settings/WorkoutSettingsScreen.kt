@@ -42,9 +42,11 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import com.example.ftmstreadmill.R
+import com.example.ftmstreadmill.data.DarkMode
 import com.example.ftmstreadmill.data.SegmentDefaults
 import com.example.ftmstreadmill.data.Settings
 import com.example.ftmstreadmill.data.SettingsRepository
+import com.example.ftmstreadmill.data.ThemeColors
 import com.example.ftmstreadmill.health.HealthConnectAvailability
 import com.example.ftmstreadmill.health.HealthConnectExporter
 import com.example.ftmstreadmill.ui.common.DurationEditDialog
@@ -81,6 +83,9 @@ class WorkoutSettingsViewModel @Inject constructor(
     fun setAutoExport(value: Boolean) = launch { repository.setHealthConnectAutoExport(value) }
     fun setWarmup(value: SegmentDefaults) = launch { repository.setWarmupDefaults(value.sanitized()) }
     fun setCooldown(value: SegmentDefaults) = launch { repository.setCooldownDefaults(value.sanitized()) }
+    fun setDarkMode(value: DarkMode) = launch { repository.setDarkMode(value) }
+    fun setThemePreset(id: String) = launch { repository.setThemePreset(id) }
+    fun setCustomTheme(value: ThemeColors) = launch { repository.setCustomThemeColors(value) }
 
     private fun SegmentDefaults.sanitized() = copy(
         durationSec = durationSec.coerceIn(10, 3600),
@@ -131,6 +136,9 @@ fun WorkoutSettingsScreen(onBack: () -> Unit, viewModel: WorkoutSettingsViewMode
             Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            Section(stringResource(R.string.settings_appearance)) {
+                AppearanceSettings(settings.theme, viewModel::setDarkMode, viewModel::setThemePreset, viewModel::setCustomTheme)
+            }
             Section(stringResource(R.string.settings_units)) {
                 SwitchRow(stringResource(R.string.menu_imperial), null, imperial, viewModel::setImperial)
             }
