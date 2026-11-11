@@ -103,6 +103,8 @@
     <!-- Running -->
     <string name="get_ready">Get ready</string>
     <string name="run_starting">Starting…</string>
+    <!-- Shown after the app countdown while waiting for the treadmill belt to start. -->
+    <string name="countdown_go">Go</string>
     <string name="run_paused">Paused</string>
     <string name="paused_user">Tap play to continue.</string>
     <string name="paused_treadmill">Paused on the treadmill. Press start on the treadmill or tap play.</string>

@@ -470,7 +470,8 @@ private fun CountdownOverlay(seconds: Int) {
                 Text(stringResource(R.string.get_ready), style = MaterialTheme.typography.headlineSmall)
                 AnimatedContent(seconds, transitionSpec = { (scaleIn() + fadeIn()) togetherWith fadeOut() }, label = "countdown") {
                     Text(
-                        it.coerceAtLeast(1).toString(),
+                        // 0 = countdown done, waiting for the treadmill's belt to start.
+                        if (it > 0) it.toString() else stringResource(R.string.countdown_go),
                         fontSize = 140.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
