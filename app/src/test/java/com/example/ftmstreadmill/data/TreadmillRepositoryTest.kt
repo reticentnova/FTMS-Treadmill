@@ -64,6 +64,41 @@ class TreadmillRepositoryTest {
     }
 
     @Test
+    fun `target speed echoed in mph is read back as the commanded km per hour`() = runTest {
+        val repo = repository()
+        repo.connect(device)
+        runCurrent()
+        val conn = ble.connections.single()
+
+        repo.setSpeed(4.83) // 3.0 mph, snapped to 4.8 km/h
+        conn.notify(FtmsUuids.MACHINE_STATUS, bytes(0x05, 0x2C, 0x01)) // echoes 3.00 (mph)
+        runCurrent()
+        assertEquals(4.8, repo.treadmillState.value.targetSpeedKmh!!, 1e-9)
+
+        // A console press to 3.1 mph is converted too: 4.99 km/h snaps to 5.0.
+        conn.notify(FtmsUuids.MACHINE_STATUS, bytes(0x05, 0x36, 0x01))
+        runCurrent()
+        assertEquals(5.0, repo.treadmillState.value.targetSpeedKmh!!, 1e-9)
+    }
+
+    @Test
+    fun `target speed echoed in km per hour is unchanged`() = runTest {
+        val repo = repository()
+        repo.connect(device)
+        runCurrent()
+        val conn = ble.connections.single()
+
+        repo.setSpeed(4.8)
+        conn.notify(FtmsUuids.MACHINE_STATUS, bytes(0x05, 0xE0, 0x01)) // 4.80 km/h
+        runCurrent()
+        assertEquals(4.8, repo.treadmillState.value.targetSpeedKmh!!, 1e-9)
+
+        conn.notify(FtmsUuids.MACHINE_STATUS, bytes(0x05, 0x2C, 0x01)) // console to 3.00 km/h
+        runCurrent()
+        assertEquals(3.0, repo.treadmillState.value.targetSpeedKmh!!, 1e-9)
+    }
+
+    @Test
     fun `rejected command is reported`() = runTest {
         val repo = repository()
         repo.connect(device)

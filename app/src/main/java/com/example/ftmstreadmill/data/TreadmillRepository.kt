@@ -14,6 +14,7 @@ import com.example.ftmstreadmill.ftms.ControlResponse
 import com.example.ftmstreadmill.ftms.FtmsParseException
 import com.example.ftmstreadmill.ftms.FtmsParsers
 import com.example.ftmstreadmill.ftms.FtmsUuids
+import com.example.ftmstreadmill.ftms.SpeedEchoUnits
 import com.example.ftmstreadmill.ftms.TreadmillDataParser
 import com.example.ftmstreadmill.ftms.model.ControlResult
 import com.example.ftmstreadmill.ftms.model.FtmsFeatures
@@ -79,6 +80,9 @@ class TreadmillRepository @Inject constructor(
 
     @Volatile private var connection: GattConnection? = null
 
+    /** Some treadmills echo target speed in mph; see [SpeedEchoUnits]. Guarded by [speedEcho] itself. */
+    private val speedEcho = SpeedEchoUnits()
+
     override fun scan(): Flow<ScannedDevice> = ble.scan(FtmsUuids.SERVICE)
 
     override fun connect(device: DeviceInfo) {
@@ -86,6 +90,7 @@ class TreadmillRepository @Inject constructor(
             sessionJob?.cancel()
             val session = ++sessionId
             _treadmillState.value = TreadmillState()
+            synchronized(speedEcho) { speedEcho.reset() }
             _connectionState.value = ConnectionState.Connecting(device, attempt = 1)
             sessionJob = scope.launch { runSession(device, session) }
         }
@@ -106,6 +111,7 @@ class TreadmillRepository @Inject constructor(
             connection = null
             _connectionState.value = ConnectionState.Idle
             _treadmillState.value = TreadmillState()
+            synchronized(speedEcho) { speedEcho.reset() }
         }
     }
 
@@ -117,6 +123,8 @@ class TreadmillRepository @Inject constructor(
 
     override suspend fun setSpeed(kmh: Double): CommandOutcome {
         val target = _treadmillState.value.speedRange.clampAndSnap(kmh)
+        // Record before sending: the treadmill's echo can arrive before the Control Point response.
+        synchronized(speedEcho) { speedEcho.commanded(target) }
         return execute(ControlCommand.SetTargetSpeed(target)).also {
             if (it == CommandOutcome.Success) _treadmillState.update { s -> s.copy(targetSpeedKmh = target) }
         }
@@ -279,7 +287,8 @@ class TreadmillRepository @Inject constructor(
         }
     }
 
-    private fun CoroutineScope.onMachineStatus(status: MachineStatus, conn: GattConnection, session: Long, device: DeviceInfo) {
+    private fun CoroutineScope.onMachineStatus(raw: MachineStatus, conn: GattConnection, session: Long, device: DeviceInfo) {
+        val status = if (raw is MachineStatus.TargetSpeedChanged) normaliseSpeedEcho(raw) else raw
         _treadmillState.update {
             when (status) {
                 is MachineStatus.TargetSpeedChanged -> it.copy(machineStatus = status, targetSpeedKmh = status.speedKmh)
@@ -297,6 +306,13 @@ class TreadmillRepository @Inject constructor(
             }
             else -> Unit
         }
+    }
+
+    private fun normaliseSpeedEcho(raw: MachineStatus.TargetSpeedChanged): MachineStatus.TargetSpeedChanged {
+        val (kmh, mph) = synchronized(speedEcho) { speedEcho.toKmh(raw.speedKmh) to speedEcho.echoesMph }
+        val snapped = if (mph) _treadmillState.value.speedRange.clampAndSnap(kmh) else kmh
+        Log.d(TAG, "Target speed echo raw=${raw.speedKmh} -> $snapped km/h (echoesMph=$mph)")
+        return MachineStatus.TargetSpeedChanged(snapped)
     }
 
     /**
