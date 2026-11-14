@@ -26,8 +26,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.abs
@@ -177,7 +179,8 @@ class WorkoutEngine @Inject constructor(
             is Msg.Start -> if (active == null) begin(msg)
             is Msg.CountdownTick -> if (active?.phase == RunPhase.COUNTDOWN) {
                 _state.value = active.copy(countdown = msg.secondsLeft)
-                _events.tryEmit(WorkoutEvent.Countdown(msg.secondsLeft))
+                // 0 means "waiting for the belt": no beep, the start cue follows when it moves.
+                if (msg.secondsLeft > 0) _events.tryEmit(WorkoutEvent.Countdown(msg.secondsLeft))
             }
             Msg.BeginRunning -> if (active?.phase == RunPhase.COUNTDOWN) beginRunning(active)
             Msg.Tick -> if (active?.phase == RunPhase.RUNNING) tick(active)
@@ -226,19 +229,25 @@ class WorkoutEngine @Inject constructor(
         val active = WorkoutRunState.Active(msg.workoutId, msg.workout, plan, RunPhase.COUNTDOWN, countdown = COUNTDOWN_SEC)
         _state.value = active
         if (!msg.countdown) {
-            beginRunning(active)
+            beginRunning(active, sendStart = true)
             return
         }
+        // Treadmills run their own countdown after Start, so send it now and let the two overlap,
+        // then start the clock once the belt actually moves rather than a few seconds ahead of it.
+        targetsJob?.cancel()
+        targetsJob = scope.launch { report("start", controller.start()) }
         countdownJob = scope.launch {
             for (n in COUNTDOWN_SEC downTo 1) {
                 inbox.send(Msg.CountdownTick(n))
                 delay(1_000)
             }
+            inbox.send(Msg.CountdownTick(0))
+            withTimeoutOrNull(BELT_START_TIMEOUT_MS) { controller.treadmillState.first { it.isBeltMoving } }
             inbox.send(Msg.BeginRunning)
         }
     }
 
-    private fun beginRunning(active: WorkoutRunState.Active) {
+    private fun beginRunning(active: WorkoutRunState.Active, sendStart: Boolean = false) {
         startedAtWall = clock.wallMs()
         val running = active.copy(phase = RunPhase.RUNNING, countdown = 0)
         _state.value = running
@@ -246,7 +255,7 @@ class WorkoutEngine @Inject constructor(
         startClock()
         targetsJob?.cancel()
         targetsJob = scope.launch {
-            report("start", controller.start())
+            if (sendStart) report("start", controller.start())
             applyTargets(running.targetSpeedKmh, running.targetInclinePercent)
         }
         _events.tryEmit(WorkoutEvent.SegmentStarted(0, running.current, running.next, isFirst = true))
@@ -419,9 +428,12 @@ class WorkoutEngine @Inject constructor(
 
     private suspend fun pauseRun(active: WorkoutRunState.Active, reason: PauseReason, sendCommand: Boolean) {
         if (active.phase == RunPhase.COUNTDOWN) {
-            // Nothing has run yet: drop back out rather than holding a paused countdown.
+            // Nothing has run yet: drop back out rather than holding a paused countdown. Start was
+            // already sent, so stop the treadmill's own countdown too.
             stopClock()
+            targetsJob?.cancel()
             _state.value = WorkoutRunState.Idle
+            if (sendCommand) scope.launch { report("stop", controller.stop()) }
             return
         }
         if (active.phase == RunPhase.PAUSED) {
@@ -608,6 +620,8 @@ class WorkoutEngine @Inject constructor(
     internal companion object {
         private const val TAG = "WorkoutEngine"
         const val COUNTDOWN_SEC = 3
+        /** After the app countdown, how long to wait for the belt before starting the clock anyway. */
+        const val BELT_START_TIMEOUT_MS = 10_000L
         const val PRE_CHANGE_COUNTDOWN = 3
         const val TICK_MS = 250L
         const val ADJUST_DEBOUNCE_MS = 350L

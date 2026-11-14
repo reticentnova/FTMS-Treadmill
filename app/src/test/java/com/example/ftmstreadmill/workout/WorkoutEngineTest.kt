@@ -57,18 +57,69 @@ class WorkoutEngineTest {
         runCurrent()
     }
 
+    private fun beltMoving(kmh: Double) {
+        controller.treadmillState.value = controller.treadmillState.value.copy(data = TreadmillData(speedKmh = kmh))
+    }
+
     @Test
-    fun `countdown then start and first targets`() = runTest {
+    fun `start is sent with the countdown and the clock starts when the belt moves`() = runTest {
         val engine = newEngine()
         engine.start(null, workout)
         runCurrent()
         assertEquals(RunPhase.COUNTDOWN, engine.active().phase)
-        assertTrue(controller.commands.isEmpty())
+        assertEquals("treadmill counts down alongside the app", listOf("start"), controller.commands)
+
+        advanceTimeBy(3_001)
+        runCurrent()
+        assertEquals("still waiting for the belt", RunPhase.COUNTDOWN, engine.active().phase)
+        assertEquals(0, engine.active().countdown)
+
+        beltMoving(1.0)
+        runCurrent()
+        assertEquals(RunPhase.RUNNING, engine.active().phase)
+        assertEquals(listOf("start", "speed 3.0", "incline 0.0"), controller.commands)
+        assertEquals(0L, engine.active().elapsedMs)
+    }
+
+    @Test
+    fun `clock starts anyway if the belt never reports moving`() = runTest {
+        val engine = newEngine()
+        engine.start(null, workout)
+        runCurrent()
+
+        advanceTimeBy(3_000 + WorkoutEngine.BELT_START_TIMEOUT_MS + 1)
+        runCurrent()
+        assertEquals(RunPhase.RUNNING, engine.active().phase)
+        assertEquals(listOf("start", "speed 3.0", "incline 0.0"), controller.commands)
+    }
+
+    @Test
+    fun `belt already moving starts right after the countdown`() = runTest {
+        beltMoving(3.0)
+        val engine = newEngine()
+        engine.start(null, workout)
+        runCurrent()
 
         advanceTimeBy(3_001)
         runCurrent()
         assertEquals(RunPhase.RUNNING, engine.active().phase)
-        assertEquals(listOf("start", "speed 3.0", "incline 0.0"), controller.commands)
+    }
+
+    @Test
+    fun `cancelling during the countdown stops the treadmill`() = runTest {
+        val engine = newEngine()
+        engine.start(null, workout)
+        runCurrent()
+        advanceTimeBy(1_500)
+
+        engine.pause()
+        runCurrent()
+        assertEquals(WorkoutRunState.Idle, engine.state.value)
+        assertEquals(listOf("start", "stop"), controller.commands)
+
+        advanceTimeBy(20_000)
+        runCurrent()
+        assertEquals("countdown doesn't restart the run", WorkoutRunState.Idle, engine.state.value)
     }
 
     @Test
