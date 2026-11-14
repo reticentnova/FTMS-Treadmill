@@ -14,7 +14,7 @@ import com.example.ftmstreadmill.ftms.ControlResponse
 import com.example.ftmstreadmill.ftms.FtmsParseException
 import com.example.ftmstreadmill.ftms.FtmsParsers
 import com.example.ftmstreadmill.ftms.FtmsUuids
-import com.example.ftmstreadmill.ftms.SpeedEchoUnits
+import com.example.ftmstreadmill.ftms.SpeedEchoRepair
 import com.example.ftmstreadmill.ftms.TreadmillDataParser
 import com.example.ftmstreadmill.ftms.model.ControlResult
 import com.example.ftmstreadmill.ftms.model.FtmsFeatures
@@ -80,8 +80,8 @@ class TreadmillRepository @Inject constructor(
 
     @Volatile private var connection: GattConnection? = null
 
-    /** Some treadmills echo target speed in mph; see [SpeedEchoUnits]. Guarded by [speedEcho] itself. */
-    private val speedEcho = SpeedEchoUnits()
+    /** Some treadmills garble target speed echoes; see [SpeedEchoRepair]. Guarded by [speedEcho] itself. */
+    private val speedEcho = SpeedEchoRepair()
 
     override fun scan(): Flow<ScannedDevice> = ble.scan(FtmsUuids.SERVICE)
 
@@ -313,10 +313,12 @@ class TreadmillRepository @Inject constructor(
     }
 
     private fun normaliseSpeedEcho(raw: MachineStatus.TargetSpeedChanged): MachineStatus.TargetSpeedChanged {
-        val (kmh, mph) = synchronized(speedEcho) { speedEcho.toKmh(raw.speedKmh) to speedEcho.echoesMph }
-        val snapped = if (mph) _treadmillState.value.speedRange.clampAndSnap(kmh) else kmh
-        Log.d(TAG, "Target speed echo raw=${raw.speedKmh} -> $snapped km/h (echoesMph=$mph)")
-        return MachineStatus.TargetSpeedChanged(snapped)
+        val state = _treadmillState.value
+        val (kmh, dropsHighByte) = synchronized(speedEcho) {
+            speedEcho.repair(raw.speedKmh, state.data.speedKmh, state.speedRange.max) to speedEcho.dropsHighByte
+        }
+        Log.d(TAG, "Target speed echo raw=${raw.speedKmh} -> $kmh km/h (dropsHighByte=$dropsHighByte)")
+        return MachineStatus.TargetSpeedChanged(kmh)
     }
 
     /**
@@ -327,7 +329,7 @@ class TreadmillRepository @Inject constructor(
         val outcome = commandMutex.withLock {
             coroutineScope {
                 val response = async(start = CoroutineStart.UNDISPATCHED) {
-                    controlResponses.first { it.requestOpCode == command.opCode }
+                    controlResponses.first { ControlPointCodec.answers(it, command) }
                 }
                 try {
                     val bytes = ControlPointCodec.encode(command)

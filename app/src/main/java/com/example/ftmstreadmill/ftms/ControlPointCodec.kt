@@ -14,8 +14,12 @@ sealed class ControlCommand(val opCode: Int) {
     data object Pause : ControlCommand(0x08)
 }
 
-/** A Control Point indication answering a previously written command. */
-data class ControlResponse(val requestOpCode: Int, val result: ControlResult)
+/**
+ * A Control Point indication answering a previously written command. [parameter] holds any bytes
+ * after the result code; the spec defines none for most commands, but some treadmills echo the
+ * request's parameter there.
+ */
+data class ControlResponse(val requestOpCode: Int, val result: ControlResult, val parameter: List<Int> = emptyList())
 
 object ControlPointCodec {
     private const val RESPONSE_OP_CODE = 0x80
@@ -44,6 +48,22 @@ object ControlPointCodec {
         return ControlResponse(
             requestOpCode = bytes[1].toInt() and 0xFF,
             result = ControlResult.fromCode(bytes[2].toInt() and 0xFF),
+            parameter = bytes.drop(3).map { it.toInt() and 0xFF },
         )
     }
+
+    /**
+     * Whether [response] answers [command]. Normally that means the request op codes match, but
+     * some treadmills label the reply to Set Target Incline as Set Target Speed (`80 02 01 0A 00`
+     * for a 1.0 % request). Such a reply still echoes the incline parameter, which tells it apart
+     * from a genuine speed reply. Commands are sent one at a time, so only one can be waiting.
+     */
+    fun answers(response: ControlResponse, command: ControlCommand): Boolean {
+        if (response.requestOpCode == command.opCode) return true
+        if (command !is ControlCommand.SetTargetIncline || response.requestOpCode != SET_TARGET_SPEED) return false
+        val requestParameter = encode(command).drop(1).map { it.toInt() and 0xFF }
+        return response.parameter == requestParameter
+    }
+
+    private const val SET_TARGET_SPEED = 0x02
 }

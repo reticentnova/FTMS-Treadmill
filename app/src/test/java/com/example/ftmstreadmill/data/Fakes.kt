@@ -102,6 +102,9 @@ class FakeGattConnection(
         return readValues[characteristic] ?: throw BleException(BleError.GattStatus("READ", 2))
     }
 
+    /** Overrides the Control Point reply for a written request; null falls back to the default. */
+    var controlReply: ((request: ByteArray) -> ByteArray?)? = null
+
     override suspend fun write(service: UUID, characteristic: UUID, value: ByteArray) {
         ensureOpen()
         if (characteristic == FtmsUuids.CONTROL_POINT) {
@@ -109,7 +112,8 @@ class FakeGattConnection(
             if (respondToControl) {
                 val opCode = value[0].toInt() and 0xFF
                 val result = controlResults[opCode]?.removeFirstOrNull() ?: defaultControlResult
-                notify(FtmsUuids.CONTROL_POINT, byteArrayOf(0x80.toByte(), opCode.toByte(), result.code.toByte()))
+                val reply = controlReply?.invoke(value) ?: byteArrayOf(0x80.toByte(), opCode.toByte(), result.code.toByte())
+                notify(FtmsUuids.CONTROL_POINT, reply)
             }
         }
     }
