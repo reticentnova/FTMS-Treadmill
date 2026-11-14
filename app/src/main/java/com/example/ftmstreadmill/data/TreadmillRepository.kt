@@ -269,6 +269,10 @@ class TreadmillRepository @Inject constructor(
         session: Long,
         device: DeviceInfo,
     ) {
+        if (notification.characteristic == FtmsUuids.MACHINE_STATUS || notification.characteristic == FtmsUuids.CONTROL_POINT) {
+            val name = if (notification.characteristic == FtmsUuids.MACHINE_STATUS) "status" else "control point reply"
+            Log.d(TAG, "<- $name ${notification.value.toHex()}")
+        }
         try {
             when (notification.characteristic) {
                 FtmsUuids.TREADMILL_DATA -> {
@@ -326,7 +330,9 @@ class TreadmillRepository @Inject constructor(
                     controlResponses.first { it.requestOpCode == command.opCode }
                 }
                 try {
-                    conn.write(FtmsUuids.SERVICE, FtmsUuids.CONTROL_POINT, ControlPointCodec.encode(command))
+                    val bytes = ControlPointCodec.encode(command)
+                    Log.d(TAG, "-> control point ${bytes.toHex()} ($command)")
+                    conn.write(FtmsUuids.SERVICE, FtmsUuids.CONTROL_POINT, bytes)
                 } catch (e: BleException) {
                     response.cancel()
                     return@coroutineScope CommandOutcome.Failed(e.error)
@@ -354,6 +360,9 @@ class TreadmillRepository @Inject constructor(
 
     internal companion object {
         private const val TAG = "TreadmillRepository"
+
+        /** "05 E2 01" for raw-byte debug logs. */
+        private fun ByteArray.toHex(): String = joinToString(" ") { "%02X".format(it) }
         const val MAX_INITIAL_ATTEMPTS = 3
         const val INITIAL_RETRY_DELAY_MS = 1_000L
         const val ADAPTER_SETTLE_MS = 1_000L
