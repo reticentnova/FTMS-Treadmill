@@ -124,7 +124,7 @@ class TreadmillRepository @Inject constructor(
     override suspend fun setSpeed(kmh: Double): CommandOutcome {
         val target = _treadmillState.value.speedRange.clampAndSnap(kmh)
         // Record before sending: the treadmill's echo can arrive before the Control Point response.
-        synchronized(speedEcho) { speedEcho.commanded(target) }
+        synchronized(speedEcho) { speedEcho.commanded(target, nowMs()) }
         return execute(ControlCommand.SetTargetSpeed(target)).also {
             if (it == CommandOutcome.Success) _treadmillState.update { s -> s.copy(targetSpeedKmh = target) }
         }
@@ -278,6 +278,7 @@ class TreadmillRepository @Inject constructor(
                 FtmsUuids.TREADMILL_DATA -> {
                     val parsed = TreadmillDataParser.parse(notification.value)
                     _treadmillState.update { it.copy(data = it.data.mergedWith(parsed)) }
+                    settleSpeedEcho(_treadmillState.value.data.speedKmh)
                 }
                 FtmsUuids.TRAINING_STATUS -> {
                     val status = FtmsParsers.trainingStatus(notification.value)
@@ -315,11 +316,20 @@ class TreadmillRepository @Inject constructor(
     private fun normaliseSpeedEcho(raw: MachineStatus.TargetSpeedChanged): MachineStatus.TargetSpeedChanged {
         val state = _treadmillState.value
         val (kmh, dropsHighByte) = synchronized(speedEcho) {
-            speedEcho.repair(raw.speedKmh, state.data.speedKmh, state.speedRange.max) to speedEcho.dropsHighByte
+            speedEcho.repair(raw.speedKmh, state.data.speedKmh, state.speedRange.max, nowMs()) to speedEcho.dropsHighByte
         }
         Log.d(TAG, "Target speed echo raw=${raw.speedKmh} -> $kmh km/h (dropsHighByte=$dropsHighByte)")
         return MachineStatus.TargetSpeedChanged(kmh)
     }
+
+    /** Corrects a garbled speed echo once the belt shows which value the treadmill meant. */
+    private fun settleSpeedEcho(beltKmh: Double?) {
+        val settled = synchronized(speedEcho) { speedEcho.settle(beltKmh, nowMs()) } ?: return
+        Log.d(TAG, "Target speed settled to $settled km/h from belt speed $beltKmh")
+        _treadmillState.update { it.copy(targetSpeedKmh = settled) }
+    }
+
+    private fun nowMs() = System.nanoTime() / 1_000_000
 
     /**
      * Writes [command] to the control point and waits for its response indication. Commands are
