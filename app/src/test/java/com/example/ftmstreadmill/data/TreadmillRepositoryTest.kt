@@ -64,6 +64,58 @@ class TreadmillRepositoryTest {
     }
 
     @Test
+    fun `target speed echo with the high byte zeroed is repaired`() = runTest {
+        val repo = repository()
+        repo.connect(device)
+        runCurrent()
+        val conn = ble.connections.single()
+
+        // Captured from a real treadmill: 02 E0 01 answered by status 05 E2 00.
+        repo.setSpeed(4.83) // snapped to 4.8 km/h
+        conn.notify(FtmsUuids.MACHINE_STATUS, bytes(0x05, 0xE2, 0x00))
+        runCurrent()
+        assertEquals(4.8, repo.treadmillState.value.targetSpeedKmh!!, 1e-9)
+
+        // Belt at 4.82; a console press to 3.1 mph (4.99 = 0x01F3) arrives as 05 F3 00.
+        conn.notify(FtmsUuids.TREADMILL_DATA, bytes(0x00, 0x00, 0xE2, 0x01))
+        conn.notify(FtmsUuids.MACHINE_STATUS, bytes(0x05, 0xF3, 0x00))
+        runCurrent()
+        assertEquals(4.99, repo.treadmillState.value.targetSpeedKmh!!, 1e-9)
+    }
+
+    @Test
+    fun `spec compliant target speed echo is unchanged`() = runTest {
+        val repo = repository()
+        repo.connect(device)
+        runCurrent()
+        val conn = ble.connections.single()
+
+        repo.setSpeed(4.8)
+        conn.notify(FtmsUuids.MACHINE_STATUS, bytes(0x05, 0xE0, 0x01)) // 4.80 km/h
+        runCurrent()
+        assertEquals(4.8, repo.treadmillState.value.targetSpeedKmh!!, 1e-9)
+
+        conn.notify(FtmsUuids.MACHINE_STATUS, bytes(0x05, 0x2C, 0x01)) // console to 3.00 km/h
+        runCurrent()
+        assertEquals(3.0, repo.treadmillState.value.targetSpeedKmh!!, 1e-9)
+    }
+
+    @Test
+    fun `incline reply labelled as a speed reply still succeeds`() = runTest {
+        val repo = repository()
+        repo.connect(device)
+        runCurrent()
+        val conn = ble.connections.single()
+        // Captured: 03 0A 00 answered with 80 02 01 0A 00.
+        conn.controlReply = { request ->
+            if (request[0].toInt() == 0x03) byteArrayOf(0x80.toByte(), 0x02, 0x01, request[1], request[2]) else null
+        }
+
+        assertEquals(CommandOutcome.Success, repo.setIncline(1.0))
+        assertEquals(1.0, repo.treadmillState.value.targetInclinePercent!!, 1e-9)
+    }
+
+    @Test
     fun `rejected command is reported`() = runTest {
         val repo = repository()
         repo.connect(device)

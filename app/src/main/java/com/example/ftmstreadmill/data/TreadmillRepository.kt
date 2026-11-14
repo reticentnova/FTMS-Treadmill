@@ -14,6 +14,7 @@ import com.example.ftmstreadmill.ftms.ControlResponse
 import com.example.ftmstreadmill.ftms.FtmsParseException
 import com.example.ftmstreadmill.ftms.FtmsParsers
 import com.example.ftmstreadmill.ftms.FtmsUuids
+import com.example.ftmstreadmill.ftms.SpeedEchoRepair
 import com.example.ftmstreadmill.ftms.TreadmillDataParser
 import com.example.ftmstreadmill.ftms.model.ControlResult
 import com.example.ftmstreadmill.ftms.model.FtmsFeatures
@@ -79,6 +80,9 @@ class TreadmillRepository @Inject constructor(
 
     @Volatile private var connection: GattConnection? = null
 
+    /** Some treadmills garble target speed echoes; see [SpeedEchoRepair]. Guarded by [speedEcho] itself. */
+    private val speedEcho = SpeedEchoRepair()
+
     override fun scan(): Flow<ScannedDevice> = ble.scan(FtmsUuids.SERVICE)
 
     override fun connect(device: DeviceInfo) {
@@ -86,6 +90,7 @@ class TreadmillRepository @Inject constructor(
             sessionJob?.cancel()
             val session = ++sessionId
             _treadmillState.value = TreadmillState()
+            synchronized(speedEcho) { speedEcho.reset() }
             _connectionState.value = ConnectionState.Connecting(device, attempt = 1)
             sessionJob = scope.launch { runSession(device, session) }
         }
@@ -106,6 +111,7 @@ class TreadmillRepository @Inject constructor(
             connection = null
             _connectionState.value = ConnectionState.Idle
             _treadmillState.value = TreadmillState()
+            synchronized(speedEcho) { speedEcho.reset() }
         }
     }
 
@@ -117,6 +123,8 @@ class TreadmillRepository @Inject constructor(
 
     override suspend fun setSpeed(kmh: Double): CommandOutcome {
         val target = _treadmillState.value.speedRange.clampAndSnap(kmh)
+        // Record before sending: the treadmill's echo can arrive before the Control Point response.
+        synchronized(speedEcho) { speedEcho.commanded(target, nowMs()) }
         return execute(ControlCommand.SetTargetSpeed(target)).also {
             if (it == CommandOutcome.Success) _treadmillState.update { s -> s.copy(targetSpeedKmh = target) }
         }
@@ -261,11 +269,16 @@ class TreadmillRepository @Inject constructor(
         session: Long,
         device: DeviceInfo,
     ) {
+        if (notification.characteristic == FtmsUuids.MACHINE_STATUS || notification.characteristic == FtmsUuids.CONTROL_POINT) {
+            val name = if (notification.characteristic == FtmsUuids.MACHINE_STATUS) "status" else "control point reply"
+            Log.d(TAG, "<- $name ${notification.value.toHex()}")
+        }
         try {
             when (notification.characteristic) {
                 FtmsUuids.TREADMILL_DATA -> {
                     val parsed = TreadmillDataParser.parse(notification.value)
                     _treadmillState.update { it.copy(data = it.data.mergedWith(parsed)) }
+                    settleSpeedEcho(_treadmillState.value.data.speedKmh)
                 }
                 FtmsUuids.TRAINING_STATUS -> {
                     val status = FtmsParsers.trainingStatus(notification.value)
@@ -279,7 +292,8 @@ class TreadmillRepository @Inject constructor(
         }
     }
 
-    private fun CoroutineScope.onMachineStatus(status: MachineStatus, conn: GattConnection, session: Long, device: DeviceInfo) {
+    private fun CoroutineScope.onMachineStatus(raw: MachineStatus, conn: GattConnection, session: Long, device: DeviceInfo) {
+        val status = if (raw is MachineStatus.TargetSpeedChanged) normaliseSpeedEcho(raw) else raw
         _treadmillState.update {
             when (status) {
                 is MachineStatus.TargetSpeedChanged -> it.copy(machineStatus = status, targetSpeedKmh = status.speedKmh)
@@ -299,6 +313,24 @@ class TreadmillRepository @Inject constructor(
         }
     }
 
+    private fun normaliseSpeedEcho(raw: MachineStatus.TargetSpeedChanged): MachineStatus.TargetSpeedChanged {
+        val state = _treadmillState.value
+        val (kmh, dropsHighByte) = synchronized(speedEcho) {
+            speedEcho.repair(raw.speedKmh, state.data.speedKmh, state.speedRange.max, nowMs()) to speedEcho.dropsHighByte
+        }
+        Log.d(TAG, "Target speed echo raw=${raw.speedKmh} -> $kmh km/h (dropsHighByte=$dropsHighByte)")
+        return MachineStatus.TargetSpeedChanged(kmh)
+    }
+
+    /** Corrects a garbled speed echo once the belt shows which value the treadmill meant. */
+    private fun settleSpeedEcho(beltKmh: Double?) {
+        val settled = synchronized(speedEcho) { speedEcho.settle(beltKmh, nowMs()) } ?: return
+        Log.d(TAG, "Target speed settled to $settled km/h from belt speed $beltKmh")
+        _treadmillState.update { it.copy(targetSpeedKmh = settled) }
+    }
+
+    private fun nowMs() = System.nanoTime() / 1_000_000
+
     /**
      * Writes [command] to the control point and waits for its response indication. Commands are
      * serialized so responses can be matched to requests by op code.
@@ -307,10 +339,12 @@ class TreadmillRepository @Inject constructor(
         val outcome = commandMutex.withLock {
             coroutineScope {
                 val response = async(start = CoroutineStart.UNDISPATCHED) {
-                    controlResponses.first { it.requestOpCode == command.opCode }
+                    controlResponses.first { ControlPointCodec.answers(it, command) }
                 }
                 try {
-                    conn.write(FtmsUuids.SERVICE, FtmsUuids.CONTROL_POINT, ControlPointCodec.encode(command))
+                    val bytes = ControlPointCodec.encode(command)
+                    Log.d(TAG, "-> control point ${bytes.toHex()} ($command)")
+                    conn.write(FtmsUuids.SERVICE, FtmsUuids.CONTROL_POINT, bytes)
                 } catch (e: BleException) {
                     response.cancel()
                     return@coroutineScope CommandOutcome.Failed(e.error)
@@ -338,6 +372,9 @@ class TreadmillRepository @Inject constructor(
 
     internal companion object {
         private const val TAG = "TreadmillRepository"
+
+        /** "05 E2 01" for raw-byte debug logs. */
+        private fun ByteArray.toHex(): String = joinToString(" ") { "%02X".format(it) }
         const val MAX_INITIAL_ATTEMPTS = 3
         const val INITIAL_RETRY_DELAY_MS = 1_000L
         const val ADAPTER_SETTLE_MS = 1_000L

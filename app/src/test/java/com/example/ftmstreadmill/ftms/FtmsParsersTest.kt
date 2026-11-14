@@ -68,6 +68,24 @@ class FtmsParsersTest {
             ControlPointCodec.decodeResponse(bytes(0x80, 0x02, 0x03)),
         )
         assertNull(ControlPointCodec.decodeResponse(bytes(0x02, 0x01)))
+        assertEquals(
+            ControlResponse(0x02, ControlResult.SUCCESS, listOf(0xE0, 0x01)),
+            ControlPointCodec.decodeResponse(bytes(0x80, 0x02, 0x01, 0xE0, 0x01)),
+        )
+    }
+
+    @Test
+    fun `incline reply mislabelled as speed still answers the incline request`() {
+        // Captured from a real treadmill: Set Target Incline 1.0 % (03 0A 00) answered with 80 02 01 0A 00.
+        val incline = ControlCommand.SetTargetIncline(1.0)
+        val reply = ControlPointCodec.decodeResponse(bytes(0x80, 0x02, 0x01, 0x0A, 0x00))!!
+        assertTrue(ControlPointCodec.answers(reply, incline))
+        // A genuine speed reply (other parameter, or none) is not taken for an incline reply.
+        assertFalse(ControlPointCodec.answers(ControlPointCodec.decodeResponse(bytes(0x80, 0x02, 0x01, 0xE0, 0x01))!!, incline))
+        assertFalse(ControlPointCodec.answers(ControlPointCodec.decodeResponse(bytes(0x80, 0x02, 0x01))!!, incline))
+        // Normal matching is unchanged.
+        assertTrue(ControlPointCodec.answers(reply, ControlCommand.SetTargetSpeed(4.8)))
+        assertTrue(ControlPointCodec.answers(ControlPointCodec.decodeResponse(bytes(0x80, 0x03, 0x01))!!, incline))
     }
 
     @Test
